@@ -6,7 +6,8 @@ namespace MyRegEngine
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            var regex = new Regex("(.*aa|cc)bb.*?+9*");
+            System.Console.WriteLine(regex.RegexStr);
         }
     }
 }
