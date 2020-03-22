@@ -352,10 +352,8 @@ namespace MyRegEngine
                                 left = FormStateFromChar(left);
 
                                 var P = new StackElement();
-                                var state = nfa.AddNewState();
-                                nfa.SetStateTransition(state, left.State.Begin.internalState, new CharWithEmpty());
-                                nfa.SetStateTransition(state, right.State.Begin.internalState, new CharWithEmpty());
-
+                                var state = nfa.Merge(right.State.Begin.internalState, 
+                                    left.State.Begin.internalState);
                                 P.State.Begin = new BeginState(state);
                                 P.State.End = left.State.End + right.State.End;
                                 stack.Push(P);

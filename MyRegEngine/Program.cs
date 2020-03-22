@@ -22,6 +22,7 @@ namespace MyRegEngine
             RunTestNfa("a*?");
             RunTestNfa(".*abcd.*");
             RunTestNfa("(aaa|c)*a+?b");
+            RunTestNfa("(a*b)|((adc)+(a|b)d?)");
         }
     }
 }
