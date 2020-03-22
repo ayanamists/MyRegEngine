@@ -1,1 +1,1 @@
-digraph TestCase1 { 0 [shape=circle,label="0"]; 1 [shape=circle,label="Begin"]; 2 [shape=circle,label="Success"]; 0 -> 2[label="b"]; 1 -> 0[label="a"]; }
+digraph TestCase1 { 0 [shape=circle,label="0"]; 1 [shape=circle,label="1"]; 2 [shape=circle,label="Success"]; 0 -> 2[label="b"]; 1 -> 0[label="a"]; }

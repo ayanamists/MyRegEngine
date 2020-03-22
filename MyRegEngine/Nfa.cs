@@ -18,28 +18,139 @@ namespace MyRegEngine
             How = how;
         }
     }
-    class Nfa<T>
+    class Nfa<T> : AutoMechine
     {
         private List<List<NfaStateNode<T>>> NfaGraph;
         private DisjointSet Set { get; set; }
-        public int BeginState { get; set; }
-        public int SuccessState { get; set; }
         const int Nothing = -1;
-        public Dfa ConvertToDfa()
-        {
-            return new Dfa();
-        }
         public Nfa()
         {
             NfaGraph = new List<List<NfaStateNode<T>>>();
             Set = new DisjointSet();
         }
 
+        NfaStateInDfa GetEpsilonClosure(int state)
+        {
+            Queue<int> que = new Queue<int>();
+            List<bool> mark = new List<bool>();
+            var ret = new NfaStateInDfa();
+            ret.AddState(state);
+            for(var i = 0; i < NfaGraph.Count; ++i)
+            {
+                mark.Add(false);
+            }
+            que.Enqueue(state);
+
+            while(que.Count != 0)
+            {
+                var now = que.Dequeue();
+                mark[now] = true;
+                foreach(var i in NfaGraph[now])
+                {
+                    if(i.How.Equals(new CharWithEmpty()) && mark[i.State] == false)
+                    {
+                        ret.AddState(i.State);
+                        que.Enqueue(i.State);
+                    }
+                }
+            }
+            return ret;
+        }
+
+        NfaStateInDfa GetEpsilonClosure(NfaStateInDfa stateUnion)
+        {
+            Queue<int> que = new Queue<int>();
+            List<bool> mark = new List<bool>();
+            var ret = stateUnion;
+            for (var i = 0; i < NfaGraph.Count; ++i)
+            {
+                mark.Add(false);
+            }
+            foreach(var i in stateUnion)
+            {
+                que.Enqueue(i);
+            }
+
+            while (que.Count != 0)
+            {
+                var now = que.Dequeue();
+                mark[now] = true;
+                foreach (var i in NfaGraph[now])
+                {
+                    if (i.How.Equals(new CharWithEmpty()) && mark[i.State] == false)
+                    {
+                        ret.AddState(i.State);
+                        que.Enqueue(i.State);
+                    }
+                }
+            }
+            return ret;
+        }
+        public void FillDfa(ref Dfa<T> dfa)
+        {
+            Queue<int> que = new Queue<int>();
+
+            NfaStateInDfa sbegin = GetEpsilonClosure(BeginState);
+            var begin = dfa.AddNewState(sbegin);
+            que.Enqueue(begin);
+            dfa.BeginState = begin;
+            dfa.SuccessState = SuccessState;
+            while(que.Count != 0)
+            {
+                var now = que.Dequeue();
+                var NfaStateOfNow = dfa.GetNfaState(now);
+
+                Dictionary<T, NfaStateInDfa> target = new Dictionary<T, NfaStateInDfa>();
+                foreach(var i in NfaStateOfNow)
+                {
+                    foreach(var j in NfaGraph[i])
+                    {
+                        if(j.How.Equals(new CharWithEmpty())) { continue; }
+                        if (target.ContainsKey(j.How))
+                        {
+                            target[j.How].AddState(GetReal(j.State));
+                        }
+                        else
+                        {
+                            target[j.How] = new NfaStateInDfa();
+                            target[j.How].AddState(GetReal(j.State));
+                        }
+                    }
+                }
+
+                foreach(var i in target)
+                {
+                    var newS = 0;
+                    var thisUoion = GetEpsilonClosure(i.Value);
+                    if (!dfa.ContainNfaState(thisUoion))
+                    {
+                        newS = dfa.AddNewState(thisUoion);
+                        que.Enqueue(newS);
+                    }
+                    else
+                    {
+                        newS = dfa.GetStateByNfaState(thisUoion);
+                    }
+                     dfa.SetStateTransition(now, newS, i.Key);
+                }
+            }
+        }
         public int AddNewState()
         {
             NfaGraph.Add(new List<NfaStateNode<T>>());
             Set.AddNew();
             return NfaGraph.Count - 1;
+        }
+
+        private List<int> GetAllAdjustState(int s)
+        {
+            var realTarget = GetReal(s);
+            var ret = new List<int>();
+            foreach(var i in NfaGraph[realTarget])
+            {
+                ret.Add(GetReal(i.State));     
+            }
+            return ret;
         }
         public int AddSuccessState()
         {
@@ -57,7 +168,7 @@ namespace MyRegEngine
         }
         private int GetReal(int state)
         {
-            return Set.Find(state);
+            return state;
         }
         private void GetAllState(out List<int> allState)
         {
@@ -75,7 +186,7 @@ namespace MyRegEngine
                 }
             }
         }
-        public string GenDotFile(string name)
+        public override string GenDotFile(string name)
         {
             DotNode node;
             DotGraph dotGraph = new DotGraph(name, true);
@@ -85,18 +196,7 @@ namespace MyRegEngine
             var s = "";
             foreach(var i in allState)
             {
-                if(i == SuccessState)
-                {
-                    s = "Success";
-                }
-                else if (i == BeginState)
-                {
-                    s = "Begin";
-                }
-                else
-                {
-                    s = $"{i}";
-                }
+                s = GetStateName(i, (x)=> { return $"{x}"; }); 
                 node = new DotNode($"{i}")
                 {
                     Shape = DotNodeShape.Circle,
@@ -119,20 +219,6 @@ namespace MyRegEngine
             }
             var ret = dotGraph.Compile();
             return ret; 
-        }
-
-        public void GenPngFile(string name)
-        {
-            var i = GenDotFile(name);
-            System.IO.File.WriteAllText($"./{name}.dot", i);
-            System.Diagnostics.Process process = new System.Diagnostics.Process();
-            System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
-            startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
-            startInfo.WorkingDirectory = System.IO.Directory.GetCurrentDirectory();
-            startInfo.FileName = @"C:\Program Files (x86)\Graphviz2.38\bin\dot.exe";
-            startInfo.Arguments = $"-Tpng ./{name}.dot -o ./{name}.png";
-            process.StartInfo = startInfo;
-            process.Start();
         }
 
         public override string ToString()

@@ -19,6 +19,11 @@ namespace MyRegEngine
             what = '0';
             Empty = true;
         }
+        public override bool Equals(object obj)
+        {
+            var other = (CharWithEmpty)obj;
+            return other.what == what && other.Empty == Empty; 
+        }
         public override string ToString()
         {
             if (Empty)
@@ -28,6 +33,17 @@ namespace MyRegEngine
             else
             {
                 return $"{what}";
+            }
+        }
+        public override int GetHashCode()
+        {
+            if (Empty)
+            {
+                return -0xa194234;
+            }
+            else
+            {
+                return what.GetHashCode();
             }
         }
     }
@@ -135,13 +151,21 @@ namespace MyRegEngine
             {
                 '.'
             };
+        static Dictionary<char, List<char>> SpecialToNormal
+            = new Dictionary<char, List<char>>() {
+                {'.', NormalAlphabet }
+            };
         static HashSet<char> SpecialMap = new HashSet<char>(SpecialAlphabet);
-        private Dfa dfa;
+        private Dfa<CharWithEmpty> dfa;
         private Nfa<CharWithEmpty> nfa;
 
         public void GenNfaPng(string name)
         {
             nfa.GenPngFile(name);
+        }
+        public void GenDfaPng(string name)
+        {
+            dfa.GenPngFile(name);
         }
         public Regex() { }
         public Regex(string regexStr)
@@ -150,6 +174,18 @@ namespace MyRegEngine
             AddConcertration();
             TurnToRPN();
             GenNfa();
+            GenDfa();
+        }
+        private void GenDfa()
+        {
+            var NewAlphaBet = new List<CharWithEmpty>();
+            foreach(var i in NormalAlphabet)
+            {
+                NewAlphaBet.Add(new CharWithEmpty(i));
+            }
+            NewAlphaBet.Add(new CharWithEmpty());
+            dfa = new Dfa<CharWithEmpty>(NewAlphaBet);
+            nfa.FillDfa(ref dfa);
         }
         void AddConcertration()
         {
@@ -298,6 +334,13 @@ namespace MyRegEngine
             RegexStr = stringBuilder.ToString();
         }
 
+        private StackElement FormEndFromChar(int state, StackElement element)
+        {
+            if(element.symbol == null) { return element; }
+            return new StackElement(new BeginState(), 
+                new EndState(state, element.symbol));
+        }
+
         private void GenNfa()
         {
             nfa = new Nfa<CharWithEmpty>();
@@ -348,12 +391,14 @@ namespace MyRegEngine
                             {
                                 var right = stack.Pop();
                                 var left = stack.Pop();
-                                right = FormStateFromChar(right);
-                                left = FormStateFromChar(left);
-
+                                var state = nfa.AddNewState();
                                 var P = new StackElement();
-                                var state = nfa.Merge(right.State.Begin.internalState, 
-                                    left.State.Begin.internalState);
+                                if(left.symbol == null) { nfa.SetStateTransition(state, 
+                                    left.State.Begin.internalState, new CharWithEmpty()); }
+                                if(right.symbol == null ) { nfa.SetStateTransition(state, 
+                                    right.State.Begin.internalState, new CharWithEmpty()); }
+                                left = FormEndFromChar(state, left);
+                                right = FormEndFromChar(state, right);
                                 P.State.Begin = new BeginState(state);
                                 P.State.End = left.State.End + right.State.End;
                                 stack.Push(P);
@@ -399,6 +444,5 @@ namespace MyRegEngine
             top.State.PointEndTo(success, nfa);
             nfa.BeginState = top.State.Begin.internalState;
         }
-
     }
 }

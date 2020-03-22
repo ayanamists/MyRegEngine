@@ -1,0 +1,1 @@
+digraph TestCaseD6 { 0 [shape=circle,label="0|"]; 1 [shape=circle,label="0|Success|"]; 0 -> 1[label="a"]; 1 -> 1[label="a"]; }
