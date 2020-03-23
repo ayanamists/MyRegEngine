@@ -5,6 +5,7 @@ using DotNetGraph.Node;
 using DotNetGraph.Edge;
 using DotNetGraph;
 using DotNetGraph.Extensions;
+using System.Drawing;
 
 namespace MyRegEngine
 {
@@ -194,13 +195,16 @@ namespace MyRegEngine
             List<int> allState;
             GetAllState(out allState);
             var s = "";
+            var color = Color.White;
             foreach(var i in allState)
             {
+                color = (i == BeginState) ? Color.Blue : Color.Black;
                 s = GetStateName(i, (x)=> { return $"{x}"; }); 
                 node = new DotNode($"{i}")
                 {
                     Shape = DotNodeShape.Circle,
-                    Label = s
+                    Label = s,
+                    Color = color
                 };
                 dotGraph.Elements.Add(node);
             }

@@ -18,7 +18,7 @@ namespace MyRegEngine
             RunTestNfa("a");
             RunTestNfa("ab");
             RunTestNfa("a*");
-            RunTestNfa("(a|b)*abcd");
+            RunTestNfa("(a|b|c)*ababc");
             RunTestNfa("(ab+)|a*");
             RunTestNfa("a|b");
             RunTestNfa("a+");

@@ -6,6 +6,7 @@ using DotNetGraph;
 using DotNetGraph.Edge;
 using DotNetGraph.Node;
 using DotNetGraph.Extensions;
+using System.Drawing;
 
 namespace MyRegEngine
 {
@@ -139,13 +140,16 @@ namespace MyRegEngine
         {
             var graph = new DotGraph(name, true);
             string s = "";
-            for(int i = 0; i < DfaGraph.Count; ++i)
+            var color = Color.White;
+            for (int i = 0; i < DfaGraph.Count; ++i)
             {
                 s = GetDfaStateName(i);
+                color = (i == BeginState) ? Color.Blue : Color.Black;
                 var node = new DotNode($"{i}")
                 {
                     Shape = DotNodeShape.Circle,
-                    Label = s
+                    Label = s,
+                    Color = color
                 };
                 graph.Elements.Add(node);
             }
